@@ -1,0 +1,87 @@
+# https://www.bmc.com/blogs/mongodb-docker-container/
+version: "3.9"
+services:
+  mongo:
+    image: mongo:5.0.6
+    container_name: mongo_basic
+    volumes:
+      - ./database-mongo:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    logging:
+      driver: "json-file" # json-file syslog none
+      options:
+        max-size: "200k"
+        max-file: "10"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        window: 120s
+        max_attempts: 3
+        delay: 10s
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    command: --wiredTigerCacheSizeGB 1.5
+    ports:
+      - 27017:27017
+    restart: unless-stopped
+    labels:
+      "autoheal": "true"
+      Author: "https://www.linkedin.com/in/wisrovi-rodriguez/"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo mongo:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  mongo-express:
+    image: mongo-express:0.54
+    container_name: mongo-express-basic
+    restart: unless-stopped
+    labels:
+      "autoheal": "true"
+      Author: "https://www.linkedin.com/in/wisrovi-rodriguez/"
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      #ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: true
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: 12345678
+      ME_CONFIG_OPTIONS_NO_DELETE: true
+    logging:
+      driver: "json-file" # json-file syslog none
+      options:
+        max-size: "200k"
+        max-file: "10"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        window: 120s
+        max_attempts: 3
+        delay: 10s
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.15"
+          memory: 64M
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: wget --quiet --tries=3 --spider http://admin:12345678@mongo-express:8081 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3

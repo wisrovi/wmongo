@@ -1,0 +1,13 @@
+loguru
+tomli
+setuptools
+
+pymongo 
+loguru 
+pydantic
+motor
+redis 
+pyjwt
+cryptography
+
+websockets
